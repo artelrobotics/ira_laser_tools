@@ -14,7 +14,7 @@
 #include <Eigen/Dense>
 #include <dynamic_reconfigure/server.h>
 #include <ira_laser_tools/laserscan_multi_mergerConfig.h>
-
+#include <limits>
 using namespace std;
 using namespace pcl;
 using namespace laserscan_multi_merger;
@@ -217,7 +217,8 @@ void LaserscanMerger::pointcloud_to_laserscan(Eigen::MatrixXf points, pcl::PCLPo
 	output->range_max = this->range_max;
 
 	uint32_t ranges_size = std::ceil((output->angle_max - output->angle_min) / output->angle_increment);
-	output->ranges.assign(ranges_size, output->range_max + 1.0);
+	output->ranges.assign(ranges_size, std::numeric_limits<double>::infinity());
+	output->intensities.assign(ranges_size, 0.0);
 
 	for (int i = 0; i < points.cols(); i++)
 	{
@@ -247,8 +248,11 @@ void LaserscanMerger::pointcloud_to_laserscan(Eigen::MatrixXf points, pcl::PCLPo
 		}
 		int index = (angle - output->angle_min) / output->angle_increment;
 
-		if (output->ranges[index] * output->ranges[index] > range_sq)
+		if (output->ranges[index] * output->ranges[index] > range_sq){
 			output->ranges[index] = sqrt(range_sq);
+			output->intensities[index] = 47.0;
+		}
+			
 	}
 
 	laser_scan_publisher_.publish(output);
